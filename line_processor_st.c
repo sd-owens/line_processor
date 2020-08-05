@@ -13,14 +13,14 @@ int getInput(){
     while(fgets(buffer, BUFFERSIZE, stdin)){
 
         input = realloc(input, strlen(input) + 1 + strlen(buffer));
-        strcat(input, buffer);
+        strcpy(input, buffer);
         input[strlen(input) - 1] = '\0';  // replace '\n' with '\0'
-        if(strcmp(input, "DONE") == 0) break;
-        }
+        if(strcmp(input, "DONE") == 0) {break;}
         memset(buffer, '\0', sizeof(buffer));
-
+    }
     free(input);
     return 0;
+    
 }
 
 
