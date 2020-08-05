@@ -6,25 +6,14 @@
 #define OUTPUTSIZE 80
 
 // Gets input from stdin stream
-int getInput(int argc){
+int getInputLine(char *line, char * buffer){
 
-    char* input = calloc(1,1), buffer[BUFFERSIZE];
-
+    line = realloc(line, strlen(buffer));
+    strcpy(line, buffer);
+    line[strlen(line) - 1] = '\0';  // replace '\n' with '\0'
     
-    // printf("Enter a message: \n");
-
-    while(fgets(buffer, BUFFERSIZE, stdin)){
-
-        input = realloc(input, strlen(buffer));
-        strcpy(input, buffer);
-        input[strlen(input) - 1] = '\0';  // replace '\n' with '\0'
-        if(strcmp(input, "DONE") == 0) {break;}
-        memset(buffer, '\0', sizeof(buffer));
-    }
-    free(input);
     return 0;
 }
-
 
 
 // Parses input to replace line seperators '\n' with ' ' spaces (blanks)
@@ -48,11 +37,23 @@ int writeOutput(char *line){
 
 int main(int argc, char *argv[]){
 
-    fprintf(stdout, "args = %d\n", argc);
-    getInput(argc);
-    parseLines();
-    parseChars();
-    writeOutput("Goodbye\n");
+    char* line = calloc(1,1), buffer[BUFFERSIZE];
+    
+    //printf("Enter a message: \n");
 
+    while(fgets(buffer, BUFFERSIZE, stdin)){
+
+        getInputLine(line, buffer);
+        if(strcmp(line, "DONE") == 0){
+            break;
+        }
+        parseLines();
+        parseChars();
+        writeOutput(line);
+        memset(buffer, '\0', sizeof(buffer));
+    }
+
+    free(line);
+    
     return 0;
 }
