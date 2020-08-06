@@ -43,16 +43,18 @@ int parseChars(char *output, char *input){
     // Clear the input buffer for reuse
     memset(input, '\0', strlen(input));
 
-    // int i = 0;
-    // while (output[i] != '\0'){
+    int i = 0;
+    while (output[i] != '\0'){
 
-    //     if(output[i] == '+' && output[i+1] == '+'){
+        if(output[i] == '+' && output[i+1] == '+'){
 
+            output[i] = '^';
+            // Copy all chars left one position to fill gap created.
+            strcpy(output + i + 1, output + i + 2);
 
-
-    //     }
-    //     i++;
-    // }
+        }
+        i++;
+    }
 
 
 
