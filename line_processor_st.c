@@ -97,9 +97,9 @@ int main(int argc, char *argv[]){
     while(cont){
 
         getInputLine(t1_buffer);
-        //TODO "DONE " has an extra space remaining
         if(strcmp(t1_buffer, "DONE\n") == 0){
             cont = false;
+            continue;
         }
         parseLines(t2_buffer, t1_buffer);
         parseChars(t3_buffer, t2_buffer);
