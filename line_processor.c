@@ -15,14 +15,6 @@ char t1_buffer[SIZE];
 char t2_buffer[SIZE];
 char t3_buffer[SIZE];
 
-// Number of items in t1 buffer, shared resource
-int t1_count = 0;
-// Number of items in t2 buffer, shared resource
-int t2_count = 0;
-// Number of items in t3 buffer, shared resource
-int t3_count = 0;
-
-
 // Initialize the mutex
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -38,18 +30,24 @@ int getInputLine(char *buffer){
     return 0;
 }
 
+
 void *input_producer(void *args){
 
+    // Lock the mutex before checking if buffer is empty
     pthread_mutex_lock(&mutex);
-    while(t1_count != 0){
+    while(1){
 
-        // t1_buffer is still full
-        pthread_cond_signal(&full);
+        // t1_buffer has data.  Wait for consumer to signal
+        // that buffer has been emptied.
+        pthread_cond_wait(&empty, &mutex);
     }
-    // Signal to consumer that buffer is not longer empty
+    getInputLine(t1_buffer);
+    // Signal to consumer that buffer is no longer empty
     pthread_cond_signal(&full);
+    // Unlock the mutex
     pthread_mutex_unlock(&mutex);
 
+    return NULL;
 }
 
 // Parses input to replace line seperators '\n' with ' ' spaces (blanks)
@@ -74,16 +72,18 @@ int parseLines(char *output, char *input){
 void *input_consumer(void *args){
 
     pthread_mutex_lock(&mutex);
-    while(t1_count != 0){
-
-        // t1_buffer is still full
-        pthread_cond_signal(&full);
+    while(1){
+        // Buffer is empty. Wait for signal 
+        // from producer that buffer has data
+        pthread_cond_wait(&full, &mutex);
     }
     parseLines(t2_buffer, t1_buffer);
-    // Signal to consumer that buffer is not longer empty
-    pthread_cond_signal(&full);
+    // Signal to producer that buffer has been emptied
+    pthread_cond_signal(&empty);
+    // Unlock the mutex
     pthread_mutex_unlock(&mutex);
 
+    return NULL;
 }
 
 // Parses lines to replace instance of '++' with '^' character
@@ -127,9 +127,14 @@ int writeOutput(char *buffer){
     return 0;
 }
 
+void *output_consumer (void *args){
+    
+    return NULL;
+}
+
 int main(int argc, char *argv[]){
 
-    bool cont = true;
+    //bool cont = true;
 
     pthread_t input, line_seperator;
     //plus_sign, output;
@@ -150,5 +155,6 @@ int main(int argc, char *argv[]){
     //     parseChars(t3_buffer, t2_buffer);
     //     writeOutput(t3_buffer);
     // }
+
     return 0;
 }
