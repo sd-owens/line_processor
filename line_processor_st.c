@@ -14,7 +14,6 @@ int getInputLine(char *buffer){
     return 0;
 }
 
-
 // Parses input to replace line seperators '\n' with ' ' spaces (blanks)
 int parseLines(char *output, char *input){
     
@@ -31,7 +30,6 @@ int parseLines(char *output, char *input){
         }
         i++;
     }
-
     return 0;
 }
 
@@ -51,13 +49,9 @@ int parseChars(char *output, char *input){
             output[i] = '^';
             // Copy all chars left one position to fill gap created.
             strcpy(output + i + 1, output + i + 2);
-
         }
         i++;
     }
-
-
-
     return 0;
 }
 // Writes parsed lines to stdout steam
@@ -74,16 +68,11 @@ int writeOutput(char *buffer){
         }
         fputc('\n', stdout);
 
-        //fprintf(stdout, "%d\n", i + 1);
-        
         // Update buffer by overwriting written characters
         strcpy(buffer, buffer + 79);
-        //fprintf(stdout, "%s\n", buffer);
     }
-
     return 0;
 }
-
 
 int main(int argc, char *argv[]){
 
@@ -92,9 +81,6 @@ int main(int argc, char *argv[]){
     char t3_buffer[BUFFERSIZE];
 
     bool cont = true;
-    int count = 1;
-    
-    //printf("Enter a message: \n");
 
     while(cont){
 
@@ -106,8 +92,6 @@ int main(int argc, char *argv[]){
         parseLines(t2_buffer, t1_buffer);
         parseChars(t3_buffer, t2_buffer);
         writeOutput(t3_buffer);
-        count++;
     }
-    
     return 0;
 }
