@@ -6,12 +6,17 @@
 
 #define SIZE 1000
 
-// MULTI-THREADED VERSION OF LINE PROCESSOR
+// Buffers, Shared Thread Resources
+char t1_buffer[SIZE];
+char t2_buffer[SIZE];
+char t3_buffer[SIZE];
+
+// MULTI-THREADED VERSION OF LINE PROCESSOR PROGRAM
 
 // Gets input from stdin stream
 int getInputLine(char *buffer){
 
-    fgets(buffer, BUFFERSIZE, stdin);
+    fgets(buffer, SIZE, stdin);
     
     return 0;
 }
@@ -77,10 +82,6 @@ int writeOutput(char *buffer){
 }
 
 int main(int argc, char *argv[]){
-
-    char t1_buffer[SIZE];
-    char t2_buffer[SIZE];
-    char t3_buffer[SIZE];
 
     bool cont = true;
 
