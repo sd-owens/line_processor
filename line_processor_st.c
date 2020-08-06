@@ -7,26 +7,26 @@
 #define OUTPUTSIZE 80
 
 // Gets input from stdin stream
-int getInputLine(char *t1_buffer){
+int getInputLine(char *buffer){
 
-    fgets(t1_buffer, BUFFERSIZE, stdin);
-
-    //line[strlen(line) - 1] = ' ';  // replace '\n' with ' '
+    // Clear the buffer for reuse
+    memset(buffer, '\0', strlen(buffer));
+    fgets(buffer, BUFFERSIZE, stdin);
     
     return 0;
 }
 
 
 // Parses input to replace line seperators '\n' with ' ' spaces (blanks)
-int parseLines(char *t1_buffer, char *t2_buffer){
+int parseLines(char *output, char *input){
     
-    strcpy(t2_buffer, t1_buffer);
+    strcat(output, input);
 
     int i = 0;
-    while (t2_buffer[i] != '\0'){
+    while (output[i] != '\0'){
 
-        if(t2_buffer[i] == '\n'){
-            t2_buffer[i] = ' '; 
+        if(output[i] == '\n'){
+            output[i] = ' '; 
         }
         i++;
     }
@@ -54,29 +54,25 @@ int parseChars(char *t2_buffer, char *t3_buffer){
     return 0;
 }
 // Writes parsed lines to stdout steam
-int writeOutput(char *line){
+int writeOutput(char *buffer){
 
     // Print 80 char limit line to terminal
-    if(strlen(line) > 79) {
+    if(strlen(buffer) > 79) {
 
         int i = 0;
         while (i < 79){
 
-            fputc(line[i], stdout);
+            fputc(buffer[i], stdout);
             i++;
         }
         fputc('\n', stdout);
 
         //fprintf(stdout, "%d\n", i + 1);
         
-        // Update buffer
-        strcpy(line, line + 79);
-        fprintf(stdout, "%s\n", line);
+        // Update buffer by overwriting written characters
+        strcpy(buffer, buffer + 79);
+        //fprintf(stdout, "%s\n", buffer);
     }
-
-    
-    
-
 
     return 0;
 }
@@ -95,7 +91,7 @@ int main(int argc, char *argv[]){
     while(cont){
 
         getInputLine(t1_buffer);
-        parseLines(t1_buffer, t2_buffer);
+        parseLines(t2_buffer, t1_buffer);
         parseChars(t2_buffer, t3_buffer);
 
         //TODO "DONE " has an extra space remaining
@@ -107,7 +103,6 @@ int main(int argc, char *argv[]){
         writeOutput(t2_buffer);
         //memset(buffer, '\0', sizeof(buffer));
     }
-
     
     return 0;
 }
