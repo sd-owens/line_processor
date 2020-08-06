@@ -56,6 +56,7 @@ int parseChars(char *t2_buffer, char *t3_buffer){
 // Writes parsed lines to stdout steam
 int writeOutput(char *line){
 
+    // Print 80 char limit line to terminal
     if(strlen(line) > 79) {
 
         int i = 0;
@@ -65,10 +66,18 @@ int writeOutput(char *line){
             i++;
         }
         fputc('\n', stdout);
-        i++;
 
-        //fprintf(stdout, "%d\n", i);
+        //fprintf(stdout, "%d\n", i + 1);
+        
+        // Update buffer
+        strcpy(line, line + 79);
+        fprintf(stdout, "%s\n", line);
     }
+
+    
+    
+
+
     return 0;
 }
 
