@@ -9,8 +9,6 @@
 // Gets input from stdin stream
 int getInputLine(char *buffer){
 
-    // Clear the buffer for reuse
-    memset(buffer, '\0', strlen(buffer));
     fgets(buffer, BUFFERSIZE, stdin);
     
     return 0;
@@ -22,6 +20,9 @@ int parseLines(char *output, char *input){
     
     strcat(output, input);
 
+    // Clear the input buffer for reuse
+    memset(input, '\0', strlen(input));
+
     int i = 0;
     while (output[i] != '\0'){
 
@@ -31,23 +32,27 @@ int parseLines(char *output, char *input){
         i++;
     }
 
-
     return 0;
 }
 
 // Parses lines to replace instance of '++' with '^' character
-int parseChars(char *t2_buffer, char *t3_buffer){
+int parseChars(char *output, char *input){
 
-    int i = 0;
-    while (t2_buffer[i] != '\0'){
+    strcat(output, input);
 
-        if(t2_buffer[i] == '+' && t2_buffer[i+1] == '+'){
+    // Clear the input buffer for reuse
+    memset(input, '\0', strlen(input));
+
+    // int i = 0;
+    // while (output[i] != '\0'){
+
+    //     if(output[i] == '+' && output[i+1] == '+'){
 
 
 
-        }
-        i++;
-    }
+    //     }
+    //     i++;
+    // }
 
 
 
@@ -57,7 +62,7 @@ int parseChars(char *t2_buffer, char *t3_buffer){
 int writeOutput(char *buffer){
 
     // Print 80 char limit line to terminal
-    if(strlen(buffer) > 79) {
+    while (strlen(buffer) > 79) {
 
         int i = 0;
         while (i < 79){
@@ -85,23 +90,21 @@ int main(int argc, char *argv[]){
     char t3_buffer[BUFFERSIZE];
 
     bool cont = true;
+    int count = 1;
     
     //printf("Enter a message: \n");
 
     while(cont){
 
         getInputLine(t1_buffer);
-        parseLines(t2_buffer, t1_buffer);
-        parseChars(t2_buffer, t3_buffer);
-
         //TODO "DONE " has an extra space remaining
-        if(strcmp(t2_buffer, "DONE ") == 0){
+        if(strcmp(t1_buffer, "DONE\n") == 0){
             cont = false;
-            break;
         }
-
-        writeOutput(t2_buffer);
-        //memset(buffer, '\0', sizeof(buffer));
+        parseLines(t2_buffer, t1_buffer);
+        parseChars(t3_buffer, t2_buffer);
+        writeOutput(t3_buffer);
+        count++;
     }
     
     return 0;
