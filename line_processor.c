@@ -7,7 +7,10 @@
 #include <stdarg.h>
 
 // Sized for 10 input lines of max 1000 chars
-#define SIZE 10000
+#define SIZE        10000
+
+// Special marker to indicate end of input data
+bool END_MARKER = false;
 
 // MULTI-THREADED VERSION OF LINE PROCESSOR PROGRAM
 
@@ -39,17 +42,20 @@ void *input(void *args){
 
     char *read_data;
 
-    while (strcmp(read_data, "DONE\n") != 0){
+    while (!END_MARKER){
 
         // // Lock the mutex before writing to input_buffer
         pthread_mutex_lock(&mutex1);
-        // while(strlen(t1_buffer) != 0){
-
-        //     // t1_buffer has data.  Wait for consumer to signal
-        //     // that buffer has been emptied.
-        //     pthread_cond_wait(&empty, &mutex1);
-        // }
+       
         read_data = getInputLine(t1_buffer);
+
+        // If DONE is received, flag the END_MARKER and do not send
+        // the full flag to the line_seperator thread.
+        if(strcmp(read_data, "DONE\n") == 0){
+            END_MARKER = true;
+            //pthread_mutex_unlock(&mutex1);
+            //continue;
+        }
         // Signal to consumer that buffer is no longer empty
         pthread_cond_signal(&full);
         // Unlock the mutex
@@ -80,31 +86,23 @@ int parseLines(char *output, char *input){
 
 void *line_seperator(void *args){
 
-    pthread_mutex_lock(&mutex1);
-    while(strlen(t1_buffer) == 0){
-        // Buffer is empty. Wait for signal from
-        // input thread that buffer has data
-        pthread_cond_wait(&full, &mutex1);
+    while (!END_MARKER){
+
+        pthread_mutex_lock(&mutex1);
+        while(strlen(t1_buffer) == 0){
+            // Buffer is empty. Wait for signal from
+            // input thread that buffer has data
+            pthread_cond_wait(&full, &mutex1);
+        }
+        // Lock output buffer mutex
+        pthread_mutex_lock(&mutex2);
+        parseLines(t2_buffer, t1_buffer);
+        // Signal to producer that buffer has been emptied
+        pthread_cond_signal(&empty);
+        // Unlock the mutex
+        pthread_mutex_unlock(&mutex1);
+        pthread_mutex_unlock(&mutex2);
     }
-    parseLines(t2_buffer, t1_buffer);
-    // Signal to producer that buffer has been emptied
-    pthread_cond_signal(&empty);
-    // Unlock the mutex
-    pthread_mutex_unlock(&mutex1);
-
-    // // Lock the mutex before checking if buffer is empty
-    // pthread_mutex_lock(&mutex2);
-    // while(1){
-
-    //     // t2_buffer is full,  wait for signal from 
-    //     // plus_sign thread that buffer has been emptied.
-    //     pthread_cond_wait(&empty, &mutex2);
-    // }
-   
-    // // Signal to consumer that buffer is no longer empty
-    // pthread_cond_signal(&full);
-    // // Unlock the mutex
-    // pthread_mutex_unlock(&mutex2);
 
     return NULL;
 }
@@ -133,36 +131,26 @@ int parseChars(char *output, char *input){
 }
 void *plus_sign(void *args){
 
-    // CONSUMER FOR T2_BUFFER
-    // Lock the mutex before checking if buffer is empty
-    pthread_mutex_lock(&mutex2);
-    while(strlen(t2_buffer) == 0){
+    while (!END_MARKER){
 
-        // t2_buffer is empty.   Wait for producer to signal
-        // that buffer has been filled.
-        pthread_cond_wait(&full, &mutex2);
+        // Lock the mutex before checking if buffer is empty
+        pthread_mutex_lock(&mutex2);
+        while(strlen(t2_buffer) == 0){
+
+            // t2_buffer is empty.   Wait for producer to signal
+            // that buffer has been filled.
+            pthread_cond_wait(&full, &mutex2);
+        }
+        // Lock output buffer mutex
+        pthread_mutex_lock(&mutex3);
+        parseChars(t3_buffer, t2_buffer);
+        // Signal to producer that buffer been emptied
+        pthread_cond_signal(&empty);
+        // Unlock the mutexes
+        pthread_mutex_unlock(&mutex2);
+        pthread_mutex_unlock(&mutex3);
     }
-    parseChars(t3_buffer, t2_buffer);
-    // Signal to producer that buffer been emptied
-    pthread_cond_signal(&empty);
-    // Unlock the mutex
-    pthread_mutex_unlock(&mutex2);
-
-    // // PRODUCER FOR T3_BUFFER
-    // // Lock the mutex before checking if buffer is empty
-    // pthread_mutex_lock(&mutex3);
-    // while(strlen(t3_buffer) >= 79){
-
-    //     // t3_buffer is full,  wait for signal from 
-    //     // output thread that buffer has been emptied.
-    //     pthread_cond_wait(&empty, &mutex3);
-    // }
     
-    // // Signal to consumer that buffer is no longer empty
-    // pthread_cond_signal(&full);
-    // // Unlock the mutex
-    // pthread_mutex_unlock(&mutex3);
-
     return NULL;
 }
 
@@ -188,17 +176,21 @@ int writeOutput(char *buffer){
 
 void *output(void *args){
 
-    pthread_mutex_lock(&mutex3);
-    while(strlen(t3_buffer) < 79){
-        // Buffer is effectively empty. Wait for signal from
-        // plus_sign thread that buffer has > 79 chars in buffer
-        pthread_cond_wait(&full, &mutex3);
+    while (!END_MARKER){
+
+        pthread_mutex_lock(&mutex3);
+        while(strlen(t3_buffer) < 79){
+            // Buffer is effectively empty. Wait for signal from
+            // plus_sign thread that buffer has > 79 chars in buffer
+            pthread_cond_wait(&full, &mutex3);
+        }
+        writeOutput(t3_buffer);
+        // Signal to producer that buffer size is less than 79 chars
+        pthread_cond_signal(&empty);
+        // Unlock the mutex
+        pthread_mutex_unlock(&mutex3);
     }
-    writeOutput(t3_buffer);
-    // Signal to producer that buffer size is less than 79 chars
-    pthread_cond_signal(&empty);
-    // Unlock the mutex
-    pthread_mutex_unlock(&mutex3);
+    
 
     return NULL;
 }
@@ -225,18 +217,6 @@ int main(int argc, char *argv[]){
     pthread_join(t2, NULL);
     pthread_join(t3, NULL);
     pthread_join(t4, NULL);
-
-    // while(cont){
-
-    //     getInputLine(t1_buffer);
-    //     if(strcmp(t1_buffer, "DONE\n") == 0){
-    //         cont = false;
-    //         continue;
-    //     }
-    //     parseLines(t2_buffer, t1_buffer);
-    //     parseChars(t3_buffer, t2_buffer);
-    //     writeOutput(t3_buffer);
-    // }
 
     return 0;
 }
