@@ -163,18 +163,18 @@ void *plus_sign(void *args){
 int writeOutput(char *buffer){
 
     // Print 80 char limit line to terminal
-    while (strlen(buffer) > 79) {
+    while (strlen(buffer) >= 80) {
 
         int i = 0;
-        while (i < 79){
+        while (i < 80){
 
             fputc(buffer[i], stdout);
             i++;
         }
         fputc('\n', stdout);
 
-        // Update buffer by overwriting written characters
-        strcpy(buffer, buffer + 79);
+        // Update buffer by overwriting output chars
+        strcpy(buffer, buffer + 80);
     }
     return 0;
 }
@@ -184,7 +184,7 @@ void *output(void *args){
     while (!END_MARKER){
 
         pthread_mutex_lock(&mutex3);
-        while(strlen(t3_buffer) < 79){
+        while(strlen(t3_buffer) < 80){
             // Buffer is effectively empty. Wait for signal from
             // plus_sign thread that buffer has > 79 chars in buffer
             printf("I am stuck waiting for mutex3!\n");
