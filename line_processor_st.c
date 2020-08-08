@@ -48,7 +48,15 @@ int parseChars(char *output, char *input){
 
             output[i] = '^';
             // Copy all chars left one position to fill gap created.
-            strcpy(output + i + 1, output + i + 2);
+            
+            int j = i + 1;
+            
+            // Fill the gap created by adding '^' in place of '++'
+            while(output[j] != '\0'){
+
+                output[j] = output[j+1];
+                j++;
+            }
         }
         i++;
     }
@@ -58,10 +66,10 @@ int parseChars(char *output, char *input){
 int writeOutput(char *buffer){
 
     // Print 80 char limit line to terminal
-    while (strlen(buffer) > 79) {
+    while (strlen(buffer) >= 80) {
 
         int i = 0;
-        while (i < 79){
+        while (i < 80){
 
             fputc(buffer[i], stdout);
             i++;
@@ -69,7 +77,7 @@ int writeOutput(char *buffer){
         fputc('\n', stdout);
 
         // Update buffer by overwriting written characters
-        strcpy(buffer, buffer + 79);
+        strcpy(buffer, buffer + 80);
     }
     return 0;
 }
