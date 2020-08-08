@@ -76,7 +76,7 @@ int writeOutput(char *buffer){
         }
         fputc('\n', stdout);
 
-        // Update buffer by overwriting written characters
+        // Update buffer by overwriting output chars
         strcpy(buffer, buffer + 80);
     }
     return 0;
