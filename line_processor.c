@@ -42,25 +42,26 @@ void *input(void *args){
 
     char *read_data;
 
-    while (!END_MARKER){
+    while(!END_MARKER){
 
-        // // Lock the mutex before writing to input_buffer
+        // Lock the mutex before writing to input_buffer
         pthread_mutex_lock(&mutex1);
-       
+    
         read_data = getInputLine(t1_buffer);
 
-        // If DONE is received, flag the END_MARKER and do not send
-        // the full flag to the line_seperator thread.
+        // If DONE is received, flag the END_MARKER as seen.
         if(strcmp(read_data, "DONE\n") == 0){
 
             END_MARKER = true;
         }
-        // Signal to consumer that buffer is no longer empty
+
+        // Signal to consumer that buffer is no longer empty and
+        // unlock shared buffer (mutex1)
         pthread_cond_signal(&full);
-        // Unlock the mutex
         pthread_mutex_unlock(&mutex1);
     }
-
+    
+    
     return NULL;
 }
 
@@ -85,27 +86,24 @@ int parseLines(char *output, char *input){
 
 void *line_seperator(void *args){
 
-    while (!END_MARKER){
-
-        pthread_mutex_lock(&mutex1);
-        while(strlen(t1_buffer) == 0){
-            // Buffer is empty. Wait for signal from
-            // input thread that buffer has data
-            pthread_cond_wait(&full, &mutex1);
-        }
-        // Lock output buffer mutex
-        pthread_mutex_lock(&mutex2);
-        parseLines(t2_buffer, t1_buffer);
-        // Signal to producer that buffer been emptied and
-        // unlocked shared buffer (mutex1)
-        pthread_cond_signal(&empty);
-        pthread_mutex_unlock(&mutex1);
-        // Signal to consumer that buffer been filled and
-        // unlocked shared buffer (mutex2)
-        pthread_cond_signal(&full);
-        pthread_mutex_unlock(&mutex2);
+    pthread_mutex_lock(&mutex1);
+    while(strlen(t1_buffer) == 0){
+        // Buffer is empty. Wait for signal from
+        // input thread that buffer has data
+        pthread_cond_wait(&full, &mutex1);
     }
-
+    // Lock output buffer mutex
+    pthread_mutex_lock(&mutex2);
+    parseLines(t2_buffer, t1_buffer);
+    // Signal to producer that buffer been emptied and
+    // unlocked shared buffer (mutex1)
+    pthread_cond_signal(&empty);
+    pthread_mutex_unlock(&mutex1);
+    // Signal to consumer that buffer been filled and
+    // unlocked shared buffer (mutex2)
+    pthread_cond_signal(&full);
+    pthread_mutex_unlock(&mutex2);
+    
     return NULL;
 }
 
@@ -141,28 +139,25 @@ int parseChars(char *output, char *input){
 }
 void *plus_sign(void *args){
 
-    while (!END_MARKER){
+    // Lock the mutex before checking if buffer is empty
+    pthread_mutex_lock(&mutex2);
+    while(strlen(t2_buffer) == 0){
 
-        // Lock the mutex before checking if buffer is empty
-        pthread_mutex_lock(&mutex2);
-        while(strlen(t2_buffer) == 0){
-
-            // t2_buffer is empty.   Wait for producer to signal
-            // that buffer has been filled.
-            pthread_cond_wait(&full, &mutex2);
-        }
-        // Lock output buffer mutex
-        pthread_mutex_lock(&mutex3);
-        parseChars(t3_buffer, t2_buffer);
-        // Signal to producer that buffer been emptied and
-        // unlocked shared buffer (mutex2)
-        pthread_cond_signal(&empty);
-        pthread_mutex_unlock(&mutex2);
-        // Signal to consumer that buffer been filled and
-        // unlocked shared buffer (mutex3)
-        pthread_cond_signal(&full);
-        pthread_mutex_unlock(&mutex3);
+        // t2_buffer is empty.   Wait for producer to signal
+        // that buffer has been filled.
+        pthread_cond_wait(&full, &mutex2);
     }
+    // Lock output buffer mutex
+    pthread_mutex_lock(&mutex3);
+    parseChars(t3_buffer, t2_buffer);
+    // Signal to producer that buffer been emptied and
+    // unlocked shared buffer (mutex2)
+    pthread_cond_signal(&empty);
+    pthread_mutex_unlock(&mutex2);
+    // Signal to consumer that buffer been filled and
+    // unlocked shared buffer (mutex3)
+    pthread_cond_signal(&full);
+    pthread_mutex_unlock(&mutex3);
     
     return NULL;
 }
@@ -177,9 +172,11 @@ int writeOutput(char *buffer){
         while (i < 80){
 
             fputc(buffer[i], stdout);
+            fflush(stdout);
             i++;
         }
         fputc('\n', stdout);
+        fflush(stdout);
 
         // Update buffer by overwriting output chars
         strcpy(buffer, buffer + 80);
@@ -191,20 +188,19 @@ void *output(void *args){
 
     while (!END_MARKER){
 
-        pthread_mutex_lock(&mutex3);
-        while(strlen(t3_buffer) < 80){
-            // Buffer is effectively empty. Wait for signal from
-            // plus_sign thread that buffer has > 79 chars in buffer
-            //printf("I am stuck waiting for mutex3!\n");
-            pthread_cond_wait(&full, &mutex3);
-        }
-        writeOutput(t3_buffer);
-        // Signal to producer that buffer size is less than 79 chars
-        pthread_cond_signal(&empty);
-        // Unlock the mutex
-        pthread_mutex_unlock(&mutex3);
+    pthread_mutex_lock(&mutex3);
+    while(strlen(t3_buffer) == 0){
+        // Buffer is empty. Wait for signal from
+        // plus_sign thread that buffer has been filled
+        pthread_cond_wait(&full, &mutex3);
     }
-    
+
+    writeOutput(t3_buffer);
+    // Signal to producer that buffer size has been emptied.
+    pthread_cond_signal(&empty);
+    // Unlock the mutex
+    pthread_mutex_unlock(&mutex3);
+    }
 
     return NULL;
 }
