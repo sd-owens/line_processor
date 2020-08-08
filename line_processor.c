@@ -195,7 +195,7 @@ void *output(void *args){
         while(strlen(t3_buffer) < 80){
             // Buffer is effectively empty. Wait for signal from
             // plus_sign thread that buffer has > 79 chars in buffer
-            printf("I am stuck waiting for mutex3!\n");
+            //printf("I am stuck waiting for mutex3!\n");
             pthread_cond_wait(&full, &mutex3);
         }
         writeOutput(t3_buffer);
