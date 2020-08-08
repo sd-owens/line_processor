@@ -52,9 +52,8 @@ void *input(void *args){
         // If DONE is received, flag the END_MARKER and do not send
         // the full flag to the line_seperator thread.
         if(strcmp(read_data, "DONE\n") == 0){
+
             END_MARKER = true;
-            //pthread_mutex_unlock(&mutex1);
-            //continue;
         }
         // Signal to consumer that buffer is no longer empty
         pthread_cond_signal(&full);
@@ -97,10 +96,13 @@ void *line_seperator(void *args){
         // Lock output buffer mutex
         pthread_mutex_lock(&mutex2);
         parseLines(t2_buffer, t1_buffer);
-        // Signal to producer that buffer has been emptied
+        // Signal to producer that buffer been emptied and
+        // unlocked shared buffer (mutex1)
         pthread_cond_signal(&empty);
-        // Unlock the mutex
         pthread_mutex_unlock(&mutex1);
+        // Signal to consumer that buffer been filled and
+        // unlocked shared buffer (mutex2)
+        pthread_cond_signal(&full);
         pthread_mutex_unlock(&mutex2);
     }
 
@@ -144,10 +146,13 @@ void *plus_sign(void *args){
         // Lock output buffer mutex
         pthread_mutex_lock(&mutex3);
         parseChars(t3_buffer, t2_buffer);
-        // Signal to producer that buffer been emptied
+        // Signal to producer that buffer been emptied and
+        // unlocked shared buffer (mutex2)
         pthread_cond_signal(&empty);
-        // Unlock the mutexes
         pthread_mutex_unlock(&mutex2);
+        // Signal to consumer that buffer been filled and
+        // unlocked shared buffer (mutex3)
+        pthread_cond_signal(&full);
         pthread_mutex_unlock(&mutex3);
     }
     
@@ -182,6 +187,7 @@ void *output(void *args){
         while(strlen(t3_buffer) < 79){
             // Buffer is effectively empty. Wait for signal from
             // plus_sign thread that buffer has > 79 chars in buffer
+            printf("I am stuck waiting for mutex3!\n");
             pthread_cond_wait(&full, &mutex3);
         }
         writeOutput(t3_buffer);
@@ -197,25 +203,20 @@ void *output(void *args){
 
 int main(int argc, char *argv[]){
 
-    //bool cont = true;
-    int s;
     pthread_t t1, t2, t3, t4;
 
-    s = pthread_create(&t1, NULL, input, NULL);
-    if(s != 0)
-        fprintf(stderr, "pthread_create");
-    s = pthread_create(&t2, NULL, line_seperator, NULL);
-    if(s != 0)
-        fprintf(stderr, "pthread_create");
-    s = pthread_create(&t3, NULL, plus_sign, NULL);
-    if(s != 0)
-        fprintf(stderr, "pthread_create");
-    s = pthread_create(&t4, NULL, output, NULL);
-    if(s != 0)
-        fprintf(stderr, "pthread_create");
+    pthread_create(&t1, NULL, input, NULL);
+    pthread_create(&t2, NULL, line_seperator, NULL);
+    pthread_create(&t3, NULL, plus_sign, NULL);
+    pthread_create(&t4, NULL, output, NULL);
+  
+    //printf("joining thread t1...\n");
     pthread_join(t1, NULL);
+    //printf("joining thread t2...\n");
     pthread_join(t2, NULL);
+    //printf("joining thread t3...\n");
     pthread_join(t3, NULL);
+    //printf("joining thread t4...\n");
     pthread_join(t4, NULL);
 
     return 0;
