@@ -125,7 +125,15 @@ int parseChars(char *output, char *input){
 
             output[i] = '^';
             // Copy all chars left one position to fill gap created.
-            strcpy(output + i + 1, output + i + 2);
+            
+            int j = i + 1;
+            
+            // Fill the gap created by adding '^' in place of '++'
+            while(output[j] != '\0'){
+
+                output[j] = output[j+1];
+                j++;
+            }
         }
         i++;
     }
