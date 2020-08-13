@@ -193,7 +193,7 @@ int writeOutput(char *buffer){
         fputc('\n', stdout);
         fflush(stdout);
 
-        // Update buffer by overwriting "written" chars
+        // Update buffer by overwriting "written" charsgit 
         strcpy(buffer, buffer + 80);
     }
     return 0;
