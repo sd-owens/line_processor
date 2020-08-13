@@ -13,9 +13,9 @@
 // MULTI-THREADED VERSION OF LINE PROCESSOR PROGRAM
 
 // Buffers, Shared Thread Resources
-char t1_buffer[SIZE];
-char t2_buffer[SIZE];
-char t3_buffer[SIZE];
+char t1_buffer[SIZE] = {'\0'};
+char t2_buffer[SIZE] = {'\0'};
+char t3_buffer[SIZE] = {'\0'};
 
 // Initialize the mutexes
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
@@ -32,28 +32,27 @@ void *input(void *args){
     bool END_MARKER = false;
 
     char data[LINE];
-    //memset(data, '\0', sizeof(data));
+    memset(data, '\0', LINE);
 
     while(!END_MARKER){
        
         fgets(data, LINE, stdin);
-        //fflush(stdin);  // <-- THIS TOOK OVER 30 HOURS TO FIGURE OUT!!!!
 
         // If DONE is received, flag the END_MARKER as true
         if(strcmp(data, "DONE\n") == 0){
             END_MARKER = true;
         } 
 
-        if(strlen(data) > 0) {
-            // Lock the mutex before writing to t1_buffer
-            pthread_mutex_lock(&mutex1);
-            strcat(t1_buffer, data);
+        // Lock the mutex before writing to t1_buffer
+        pthread_mutex_lock(&mutex1);
+        strcat(t1_buffer, data);
 
-            // Signal to consumer that buffer is no longer empty
-            pthread_cond_signal(&full);
-            // Unlock shared buffer (mutex1)
-            pthread_mutex_unlock(&mutex1);
-        }
+        // Signal to consumer that buffer is no longer empty
+        pthread_cond_signal(&full);
+        // Unlock shared buffer (mutex1)
+        pthread_mutex_unlock(&mutex1);
+        
+        memset(data, '\0', LINE);
     }
     return NULL;
 }
@@ -65,7 +64,7 @@ int parseLines(char *output){
     while (output[i] != '\0'){
 
         if(output[i] == '\n'){
-            output[i] = ' '; 
+            output[i] = ' ';
         }
         i++;
     }
@@ -77,6 +76,7 @@ void *line_seperator(void *args){
     bool END_MARKER = false;
 
     char data[LINE];
+    memset(data, '\0', LINE);
 
     while(!END_MARKER){
 
@@ -92,7 +92,7 @@ void *line_seperator(void *args){
         // Signal to producer that buffer been emptied and
         // unlocked shared buffer (mutex1)
         memset(t1_buffer, '\0', strlen(t1_buffer));
-        pthread_cond_signal(&empty);
+        //pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex1);
 
         // If DONE is received, flag the END_MARKER as seen
@@ -112,6 +112,8 @@ void *line_seperator(void *args){
         // Unlock shared buffer (mutex2)
         pthread_cond_signal(&full);
         pthread_mutex_unlock(&mutex2);
+
+        memset(data, '\0', LINE);
     }
     return NULL;
 }
@@ -138,6 +140,7 @@ int parseChars(char *output){
         }
         i++;
     }
+
     return 0;
 }
 void *plus_sign(void *args){
@@ -145,6 +148,7 @@ void *plus_sign(void *args){
     bool END_MARKER = false;
 
     char data[LINE];
+    memset(data, '\0', LINE);
 
     while(!END_MARKER){
 
@@ -161,7 +165,7 @@ void *plus_sign(void *args){
         memset(t2_buffer, '\0', strlen(t2_buffer));
         // Signal to producer that buffer been emptied and
         // unlocked shared buffer (mutex2)
-        pthread_cond_signal(&empty);
+        //pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex2);
 
         if(strstr(data, "DONE ") != NULL){
@@ -178,6 +182,8 @@ void *plus_sign(void *args){
         // Unlock shared buffer (mutex3)
         pthread_cond_signal(&full);
         pthread_mutex_unlock(&mutex3);
+
+        memset(data, '\0', LINE);
     }
     return NULL;
 }
@@ -209,6 +215,7 @@ void *output(void *args){
     bool END_MARKER = false;
 
     char data[LINE];
+    memset(data, '\0', LINE);
 
     while(!END_MARKER){
 
@@ -222,7 +229,7 @@ void *output(void *args){
         strcat(data, t3_buffer);
         // Signal to producer that buffer has been emptied.
         memset(t3_buffer, '\0', strlen(t3_buffer));
-        pthread_cond_signal(&empty);
+        //pthread_cond_signal(&empty);
         // Unlock the mutex
         pthread_mutex_unlock(&mutex3);
 
@@ -231,6 +238,7 @@ void *output(void *args){
             
         }
         writeOutput(data);
+        memset(data, '\0', LINE);
     }
     return NULL;
 }
