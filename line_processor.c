@@ -23,8 +23,9 @@ pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex3 = PTHREAD_MUTEX_INITIALIZER;
 
 // Initialize the condition variables
-pthread_cond_t full = PTHREAD_COND_INITIALIZER;
-pthread_cond_t empty = PTHREAD_COND_INITIALIZER;
+pthread_cond_t full1 = PTHREAD_COND_INITIALIZER;
+pthread_cond_t full2 = PTHREAD_COND_INITIALIZER;
+pthread_cond_t full3 = PTHREAD_COND_INITIALIZER;
 
 // Gets input from stdin stream and outputs to the shared t1_buffer
 void *input(void *args){
@@ -42,17 +43,14 @@ void *input(void *args){
         if(strcmp(data, "DONE\n") == 0){
             END_MARKER = true;
         } 
-
         // Lock the mutex before writing to t1_buffer
         pthread_mutex_lock(&mutex1);
         strcat(t1_buffer, data);
 
-        // Signal to consumer that buffer is no longer empty
-        pthread_cond_signal(&full);
+        // Signal to consumer that buffer has data
+        pthread_cond_signal(&full1);
         // Unlock shared buffer (mutex1)
         pthread_mutex_unlock(&mutex1);
-        
-        memset(data, '\0', LINE);
     }
     return NULL;
 }
@@ -79,20 +77,18 @@ void *line_seperator(void *args){
     memset(data, '\0', LINE);
 
     while(!END_MARKER){
-
-        // Lock the input buffer before checking contents
+        // Lock the mutex before checking if buffer is empty
         pthread_mutex_lock(&mutex1);
         while(strlen(t1_buffer) == 0){
             // Buffer is empty. Wait for signal from
             // input thread that buffer has data
-            pthread_cond_wait(&full, &mutex1);
+            pthread_cond_wait(&full1, &mutex1);
         }
 
         strcpy(data, t1_buffer);
-        // Signal to producer that buffer been emptied and
-        // unlocked shared buffer (mutex1)
+        // Empty the buffer, setting size to 0 length
         memset(t1_buffer, '\0', strlen(t1_buffer));
-        //pthread_cond_signal(&empty);
+        // Unlock shared buffer (mutex1)
         pthread_mutex_unlock(&mutex1);
 
         // If DONE is received, flag the END_MARKER as seen
@@ -110,10 +106,8 @@ void *line_seperator(void *args){
 
         // Signal to consumer that buffer been filled
         // Unlock shared buffer (mutex2)
-        pthread_cond_signal(&full);
+        pthread_cond_signal(&full2);
         pthread_mutex_unlock(&mutex2);
-
-        memset(data, '\0', LINE);
     }
     return NULL;
 }
@@ -151,21 +145,18 @@ void *plus_sign(void *args){
     memset(data, '\0', LINE);
 
     while(!END_MARKER){
-
         // Lock the mutex before checking if buffer is empty
         pthread_mutex_lock(&mutex2);
         while(strlen(t2_buffer) == 0){
 
             // t2_buffer is empty.   Wait for producer to signal
             // that input buffer has been filled.
-            pthread_cond_wait(&full, &mutex2);
+            pthread_cond_wait(&full2, &mutex2);
         }
-       
         strcpy(data, t2_buffer);
+        // Empty the buffer, setting size to 0 length
         memset(t2_buffer, '\0', strlen(t2_buffer));
-        // Signal to producer that buffer been emptied and
-        // unlocked shared buffer (mutex2)
-        //pthread_cond_signal(&empty);
+        // Unlock shared buffer (mutex2)
         pthread_mutex_unlock(&mutex2);
 
         if(strstr(data, "DONE ") != NULL){
@@ -180,10 +171,8 @@ void *plus_sign(void *args){
 
         // Signal to consumer that buffer been filled
         // Unlock shared buffer (mutex3)
-        pthread_cond_signal(&full);
+        pthread_cond_signal(&full3);
         pthread_mutex_unlock(&mutex3);
-
-        memset(data, '\0', LINE);
     }
     return NULL;
 }
@@ -204,7 +193,7 @@ int writeOutput(char *buffer){
         fputc('\n', stdout);
         fflush(stdout);
 
-        // Update buffer by overwriting output chars
+        // Update buffer by overwriting "written" chars
         strcpy(buffer, buffer + 80);
     }
     return 0;
@@ -218,19 +207,18 @@ void *output(void *args){
     memset(data, '\0', LINE);
 
     while(!END_MARKER){
-
+        // Lock the mutex before checking if buffer is empty
         pthread_mutex_lock(&mutex3);
         while(strlen(t3_buffer) == 0){
             // Buffer is empty. Wait for signal from
             // plus_sign thread that buffer has been filled
-            pthread_cond_wait(&full, &mutex3);
+            pthread_cond_wait(&full3, &mutex3);
         }
 
         strcat(data, t3_buffer);
-        // Signal to producer that buffer has been emptied.
+        // Empty the buffer, setting size to 0 length
         memset(t3_buffer, '\0', strlen(t3_buffer));
-        //pthread_cond_signal(&empty);
-        // Unlock the mutex
+        // Unlock the shared buffer (mutex3)
         pthread_mutex_unlock(&mutex3);
 
         if(strstr(data, "DONE ") != NULL){
@@ -238,7 +226,6 @@ void *output(void *args){
             
         }
         writeOutput(data);
-        memset(data, '\0', LINE);
     }
     return NULL;
 }
