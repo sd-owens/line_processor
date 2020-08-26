@@ -1,4 +1,4 @@
-# Multi-thread producer-consumer pipeline written in c and tlpi
+# Multi-threaded producer-consumer pipeline written in c and tlpi
 
 C PROGRAM
 Compiled with GNU Compiler GCC
