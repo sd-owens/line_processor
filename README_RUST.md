@@ -1,4 +1,5 @@
-RUST PROGRAM
+# RUST PROGRAM Map-Reduce
+
 Compiled with rustc 2018
 
 Example usage:
